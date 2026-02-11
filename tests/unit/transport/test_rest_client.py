@@ -510,7 +510,9 @@ class TestRESTClientTaskOperations:
 
             result = client.get_task("task-123")
 
-            mock_get.assert_called_once_with("https://example.com:8080/v1/tasks/task-123", params={}, headers=client.default_headers)
+            mock_get.assert_called_once_with(
+                "https://example.com:8080/v1/tasks/task-123", params={}, headers=client.default_headers
+            )
 
             assert result["id"] == "task-123"
             assert result["context_id"] == "default-context"

@@ -8,9 +8,9 @@ def generate_request_id() -> str:
 
 
 def make_json_rpc_request(
-        method: str,
-        params: Union[dict, list, None] = None,
-        id: Union[str, int, None] = None,
+    method: str,
+    params: Union[dict, list, None] = None,
+    id: Union[str, int, None] = None,
 ) -> Dict[str, Any]:
     return {
         "jsonrpc": "2.0",
@@ -49,6 +49,7 @@ def is_json_rpc_error_response(resp: dict, expected_id: Union[str, int, None] = 
 
 # A2A Protocol Method Implementations - Real HTTP Calls
 
+
 def convert_a2a_message_to_protobuf_json(message: Dict[str, Any]) -> Dict[str, Any]:
     """
     Convert A2A JSON message format to protobuf-compatible JSON format.
@@ -84,10 +85,7 @@ def convert_a2a_message_to_protobuf_json(message: Dict[str, Any]) -> Dict[str, A
 
     # Map role to protobuf enum format
     if "role" in message:
-        role_map = {
-            "user": "ROLE_USER",
-            "agent": "ROLE_AGENT"
-        }
+        role_map = {"user": "ROLE_USER", "agent": "ROLE_AGENT"}
         protobuf_message["role"] = role_map.get(message["role"], "ROLE_UNSPECIFIED")
 
     # Map parts -> parts (and convert part format)
@@ -129,6 +127,7 @@ def convert_a2a_message_to_protobuf_json(message: Dict[str, Any]) -> Dict[str, A
         protobuf_message["extensions"] = message["extensions"]
 
     return protobuf_message
+
 
 def convert_protobuf_response_to_a2a_json(response: Dict[str, Any]) -> Dict[str, Any]:
     """
@@ -198,7 +197,7 @@ def convert_protobuf_task_to_a2a(task: Dict[str, Any]) -> Dict[str, Any]:
                 "TASK_STATE_CANCELLED": "canceled",
                 "TASK_STATE_INPUT_REQUIRED": "input-required",
                 "TASK_STATE_REJECTED": "rejected",
-                "TASK_STATE_AUTH_REQUIRED": "auth-required"
+                "TASK_STATE_AUTH_REQUIRED": "auth-required",
             }
             a2a_status["state"] = state_map.get(status["state"], status["state"])
         if "timestamp" in status:
@@ -243,7 +242,7 @@ def convert_protobuf_message_to_a2a(message: Dict[str, Any]) -> Dict[str, Any]:
         role_map = {
             "ROLE_USER": "user",
             "ROLE_AGENT": "agent",
-            "ROLE_UNSPECIFIED": "user"  # default fallback
+            "ROLE_UNSPECIFIED": "user",  # default fallback
         }
         a2a_message["role"] = role_map.get(message["role"], "user")
 
@@ -288,6 +287,7 @@ def convert_protobuf_message_to_a2a(message: Dict[str, Any]) -> Dict[str, Any]:
 
     return a2a_message
 
+
 def handle_http_error_response(response) -> Dict[str, Any]:
     """
     Handle HTTP error responses and map them to proper JSON-RPC error format.
@@ -318,7 +318,8 @@ def handle_http_error_response(response) -> Dict[str, Any]:
         elif "InvalidParamsError" in error_type:
             return {"error": {"code": -32602, "message": "Invalid method parameters"}}
         elif "InternalError" in error_type and (
-                "Parts cannot be empty" in error_message or "InternalError: Parts cannot be empty" in error_message):
+            "Parts cannot be empty" in error_message or "InternalError: Parts cannot be empty" in error_message
+        ):
             # SUT is incorrectly returning InternalError for invalid params (same bug as gRPC INTERNAL status)
             return {"error": {"code": -32602, "message": "Invalid method parameters"}}
 

@@ -451,7 +451,7 @@ class GRPCClient(BaseTransportClient):
         self,
         message: Dict[str, Any],
         configuration: Optional[Dict[str, Any]] = None,
-        extra_headers: Optional[Dict[str, str]] = None
+        extra_headers: Optional[Dict[str, str]] = None,
     ) -> AsyncIterator[Dict[str, Any]]:
         """
         Send message via gRPC and stream responses.
@@ -482,12 +482,12 @@ class GRPCClient(BaseTransportClient):
                 channel = grpc.aio.secure_channel(self.grpc_target, credentials)
             else:
                 channel = grpc.aio.insecure_channel(self.grpc_target)
-                
+
             async with channel:
                 # Use the generated protobuf stub for streaming
                 stub = self._pb_grpc.A2AServiceStub(channel)
                 stream = stub.SendStreamingMessage(request, timeout=self.timeout)
-                
+
                 async for response in stream:
                     # Convert protobuf response to JSON format
                     if response.WhichOneof("payload") == "task":
@@ -647,7 +647,9 @@ class GRPCClient(BaseTransportClient):
             logger.error(error_msg)
             raise TransportError(error_msg, TransportType.GRPC)
 
-    def resubscribe_task(self, task_id: str, extra_headers: Optional[Dict[str, str]] = None,  **kwargs) -> AsyncIterator[Dict[str, Any]]:
+    def resubscribe_task(
+        self, task_id: str, extra_headers: Optional[Dict[str, str]] = None, **kwargs
+    ) -> AsyncIterator[Dict[str, Any]]:
         """
         Resubscribe to task updates via gRPC streaming.
 
@@ -666,7 +668,9 @@ class GRPCClient(BaseTransportClient):
         """
         return self.subscribe_to_task(task_id, extra_headers, **kwargs)
 
-    async def subscribe_to_task(self, task_id: str, extra_headers: Optional[Dict[str, str]] = None, **kwargs) -> AsyncIterator[Dict[str, Any]]:
+    async def subscribe_to_task(
+        self, task_id: str, extra_headers: Optional[Dict[str, str]] = None, **kwargs
+    ) -> AsyncIterator[Dict[str, Any]]:
         """
         Subscribe to task updates via gRPC streaming.
 
@@ -688,22 +692,22 @@ class GRPCClient(BaseTransportClient):
             # Make real gRPC streaming call to live SUT
             self._load_static_stubs()
             pb = self._pb
-            
+
             # Build TaskSubscriptionRequest
             request = pb.TaskSubscriptionRequest(name=f"tasks/{task_id}")
-            
+
             # Create appropriate channel based on TLS setting
             if self.use_tls:
                 credentials = grpc.ssl_channel_credentials()
                 channel = grpc.aio.secure_channel(self.grpc_target, credentials)
             else:
                 channel = grpc.aio.insecure_channel(self.grpc_target)
-                
+
             async with channel:
                 # Use the generated protobuf stub for task subscription
                 stub = self._pb_grpc.A2AServiceStub(channel)
                 stream = stub.TaskSubscription(request, timeout=self.timeout)
-                
+
                 async for response in stream:
                     # Convert protobuf response to JSON format
                     if response.WhichOneof("payload") == "task":
@@ -811,23 +815,23 @@ class GRPCClient(BaseTransportClient):
 
             self._load_static_stubs()
             pb = self._pb
-            
+
             # Create GetAgentCardRequest
             req = pb.GetAgentCardRequest()
-            
+
             # Prepare authentication metadata from extra_headers
             metadata = []
             if extra_headers:
                 for key, value in extra_headers.items():
                     metadata.append((key.lower(), value))
-            
+
             # Make real gRPC call to live SUT with authentication metadata
             if self.use_tls:
                 credentials = grpc.ssl_channel_credentials()
                 channel = grpc.secure_channel(self.grpc_target, credentials)
             else:
                 channel = grpc.insecure_channel(self.grpc_target)
-                
+
             with channel:
                 stub = self._pb_grpc.A2AServiceStub(channel)
                 resp = stub.GetAgentCard(req, metadata=metadata, timeout=self.timeout)
@@ -1093,9 +1097,7 @@ class GRPCClient(BaseTransportClient):
             },
             "defaultInputModes": list(resp.default_input_modes),
             "defaultOutputModes": list(resp.default_output_modes),
-            "additionalInterfaces": [
-                {"url": iface.url, "transport": iface.transport} for iface in resp.additional_interfaces
-            ],
+            "additionalInterfaces": [{"url": iface.url, "transport": iface.transport} for iface in resp.additional_interfaces],
             "skills": [
                 {
                     "id": skill.id,
@@ -1111,7 +1113,7 @@ class GRPCClient(BaseTransportClient):
         # Add optional fields if present
         if resp.documentation_url:
             agent_card["documentationUrl"] = resp.documentation_url
-            
+
         # Add security schemes if present (for extended card)
         if resp.security_schemes:
             agent_card["securitySchemes"] = {}
@@ -1124,10 +1126,7 @@ class GRPCClient(BaseTransportClient):
         return agent_card
 
     def _json_to_send_message_request(
-        self,
-        message: Dict[str, Any],
-        configuration: Optional[Dict[str, Any]] = None,
-        default_blocking: bool = True
+        self, message: Dict[str, Any], configuration: Optional[Dict[str, Any]] = None, default_blocking: bool = True
     ):
         """
         Convert JSON message to SendMessageRequest protobuf.
@@ -1161,11 +1160,17 @@ class GRPCClient(BaseTransportClient):
             elif p.get("kind") == "data" and "data" in p:
                 # Handle DataPart - convert JSON data to protobuf Struct
                 from google.protobuf.struct_pb2 import Struct
+
                 struct_data = Struct()
                 struct_data.update(p["data"])
                 data_part = pb.DataPart(data=struct_data)
                 parts.append(pb.Part(data=data_part))
-            elif p.get("kind") == "file" and (("file" in p and "uri" in p["file"]) or ("file" in p and "bytes" in p["file"]) or "fileUri" in p or "fileBytes" in p):
+            elif p.get("kind") == "file" and (
+                ("file" in p and "uri" in p["file"])
+                or ("file" in p and "bytes" in p["file"])
+                or "fileUri" in p
+                or "fileBytes" in p
+            ):
                 # Handle FilePart
                 file_part = pb.FilePart()
                 if "fileUri" in p:
@@ -1326,7 +1331,7 @@ class GRPCClient(BaseTransportClient):
             Dict containing JSON representation of the protobuf message
         """
         from google.protobuf.json_format import MessageToDict
-        
+
         # Convert protobuf message to dictionary using the standard library
         json_dict = MessageToDict(
             pb_message,
@@ -1334,9 +1339,9 @@ class GRPCClient(BaseTransportClient):
             preserving_proto_field_name=False,
             use_integers_for_enums=False,
             descriptor_pool=None,
-            float_precision=None
+            float_precision=None,
         )
-        
+
         logger.debug(f"Converted protobuf message to JSON: {type(pb_message).__name__}")
         return json_dict
 

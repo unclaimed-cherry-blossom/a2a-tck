@@ -175,7 +175,7 @@ async def test_message_stream_invalid_params(sut_client, agent_card_data):
     try:
         # This should fail at the transport level or return an error stream
         stream = transport_send_streaming_message(sut_client, invalid_message_params)
-        
+
         # If we get a stream, check if it returns error events
         events = []
         try:
@@ -187,15 +187,13 @@ async def test_message_stream_invalid_params(sut_client, agent_card_data):
         except Exception:
             # Expected - invalid params should cause an error
             pass
-        
+
         # If we got events, they should indicate error
         if events:
             # Check if any event indicates an error
             has_error = any(
-                isinstance(event, dict) and (
-                    "error" in event or 
-                    ("status" in event and event.get("status", {}).get("state") == "failed")
-                )
+                isinstance(event, dict)
+                and ("error" in event or ("status" in event and event.get("status", {}).get("state") == "failed"))
                 for event in events
             )
             assert has_error, "Invalid params should result in error response or failed status"
@@ -231,7 +229,7 @@ async def test_tasks_resubscribe(sut_client, agent_card_data):
     resubscribe_events = []
     stream_error = None
     resubscribe_error = None
-    
+
     try:
         # First, create a task via message/stream to get a task ID
         message_params = {
@@ -283,13 +281,13 @@ async def test_tasks_resubscribe(sut_client, agent_card_data):
             try:
                 # Wait for task ID to be available
                 await task_id_received.wait()
-                
+
                 if task_id is None:
                     logger.warning("No task ID available for resubscribe")
                     return
 
                 logger.info(f"Starting resubscribe for task ID: {task_id}")
-                
+
                 # Use transport-agnostic task resubscription
                 resubscribe_stream = transport_resubscribe_task(sut_client, task_id)
 
@@ -317,7 +315,7 @@ async def test_tasks_resubscribe(sut_client, agent_card_data):
                     # Collect a few events then break
                     if len(resubscribe_events) >= 3:
                         break
-                        
+
             except Exception as e:
                 resubscribe_error = e
                 logger.error(f"Error in resubscribe processing: {e}")
@@ -330,13 +328,14 @@ async def test_tasks_resubscribe(sut_client, agent_card_data):
         try:
             await asyncio.wait_for(
                 asyncio.gather(initial_stream_task, resubscribe_task, return_exceptions=True),
-                timeout=TIMEOUTS["async_wait_for"] * 2)
+                timeout=TIMEOUTS["async_wait_for"] * 2,
+            )
         except asyncio.TimeoutError:
             logger.warning("Timeout while waiting for stream processing and resubscribe")
             # Cancel tasks if they're still running
             initial_stream_task.cancel()
             resubscribe_task.cancel()
-            
+
         # Check for errors from the background tasks
         if stream_error:
             error_msg = str(stream_error).lower()
@@ -446,12 +445,12 @@ async def test_tasks_resubscribe_nonexistent(sut_client, agent_card_data):
                     if len(events) >= 5:
                         logger.info("Collected 5 events, ending stream processing.")
                         break
-                
+
                 return error_event_found
 
             # Add timeout to prevent hanging on bad streams
             error_found = await asyncio.wait_for(process_stream(), timeout=TIMEOUTS["async_wait_for"])
-                    
+
         except asyncio.TimeoutError:
             logger.warning("Timeout while processing resubscribe stream for nonexistent task - this may be expected")
         except RuntimeError as e:
@@ -476,8 +475,7 @@ async def test_tasks_resubscribe_nonexistent(sut_client, agent_card_data):
                 "Streaming capability declared but tasks/resubscribe returned error indicating not implemented. "
                 "This violates the A2A specification - declared capabilities MUST be implemented."
             )
-        elif ("not found" in error_msg or "404" in error_msg or "invalid" in error_msg or 
-              "event loop is closed" in error_msg):
+        elif "not found" in error_msg or "404" in error_msg or "invalid" in error_msg or "event loop is closed" in error_msg:
             # These are expected behaviors for non-existent task ID
             logger.info(f"Properly rejected non-existent task with: {e}")
         else:
@@ -503,12 +501,12 @@ async def test_sse_header_compliance(sut_client, agent_card_data):
 
     # Note: This test validates HTTP-specific SSE headers, so it needs access to the underlying HTTP response.
     # For JSON-RPC transport, we can test this. For other transports, this test may not be applicable.
-    
+
     # Check if we're using a transport that supports HTTP headers inspection
-    transport_type = getattr(sut_client, 'transport_type', None)
-    if transport_type and transport_type.value.lower() != 'jsonrpc':
+    transport_type = getattr(sut_client, "transport_type", None)
+    if transport_type and transport_type.value.lower() != "jsonrpc":
         pytest.skip(f"SSE header compliance test only applicable to JSON-RPC transport, got {transport_type.value}")
-    
+
     # Prepare streaming request message
     message_params = {
         "message": {
@@ -522,15 +520,15 @@ async def test_sse_header_compliance(sut_client, agent_card_data):
     try:
         # For this specific test, we need to access the underlying HTTP client
         # to check headers. We'll use the raw JSON-RPC method if available.
-        if hasattr(sut_client, 'send_raw_json_rpc'):
+        if hasattr(sut_client, "send_raw_json_rpc"):
             # Create JSON-RPC request for message/stream
             req_id = message_utils.generate_request_id()
             json_rpc_request = message_utils.make_json_rpc_request("message/stream", params=message_params, id=req_id)
-            
+
             # This will depend on the specific implementation
             # For now, we'll just validate that streaming works
             stream = transport_send_streaming_message(sut_client, message_params)
-            
+
             # Validate we can get streaming events (headers are transport-specific)
             event_count = 0
             async for event in stream:
@@ -538,12 +536,12 @@ async def test_sse_header_compliance(sut_client, agent_card_data):
                 logger.info(f"Received streaming event for header test: {event}")
                 if event_count >= 1:  # Just need to confirm streaming works
                     break
-            
+
             assert event_count > 0, "Should receive at least one streaming event"
             logger.info("SSE streaming functionality confirmed (header validation is transport-specific)")
         else:
             pytest.skip("Cannot access raw HTTP response for header validation with this transport client")
-            
+
     except Exception as e:
         error_msg = str(e).lower()
         if "501" in error_msg or "not implemented" in error_msg:
@@ -598,10 +596,8 @@ async def test_sse_event_format_compliance(sut_client, agent_card_data):
             if "kind" in event:
                 # This is likely a Message, TaskStatusUpdateEvent, or TaskArtifactUpdateEvent
                 valid_kinds = ["task", "message", "status-update", "artifact-update"]
-                assert event["kind"] in valid_kinds, (
-                    f"Event kind must be one of {valid_kinds}, got: {event.get('kind')}"
-                )
-                
+                assert event["kind"] in valid_kinds, f"Event kind must be one of {valid_kinds}, got: {event.get('kind')}"
+
                 if event["kind"] == "message":
                     assert "role" in event, "Message events must have role field"
                     assert "parts" in event, "Message events must have parts field"
@@ -623,7 +619,7 @@ async def test_sse_event_format_compliance(sut_client, agent_card_data):
                 break
 
         assert events_processed > 0, "Streaming should produce at least one event"
-        
+
     except Exception as e:
         error_msg = str(e).lower()
         if "501" in error_msg or "not implemented" in error_msg:
@@ -635,7 +631,7 @@ async def test_sse_event_format_compliance(sut_client, agent_card_data):
             raise
 
 
-#@optional_capability
+# @optional_capability
 @pytest.mark.skip(reason="This test is flaky due to network issues and timeouts; needs improvement")
 @pytest.mark.asyncio
 async def test_streaming_connection_resilience(sut_client, agent_card_data):

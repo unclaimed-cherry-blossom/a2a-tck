@@ -62,11 +62,11 @@ def push_notification_webhook():
     async def run_server():
         """Run the aiohttp server"""
         app = web.Application()
-        app.router.add_post('/webhook', webhook_handler)
+        app.router.add_post("/webhook", webhook_handler)
 
         runner = web.AppRunner(app)
         await runner.setup()
-        site = web.TCPSite(runner, 'localhost', 8888)
+        site = web.TCPSite(runner, "localhost", 8888)
         await site.start()
 
         server_ready.set()
@@ -100,11 +100,7 @@ def push_notification_webhook():
             time.sleep(0.1)
         return False
 
-    yield {
-        'url': 'http://localhost:8888/webhook',
-        'notifications': notifications,
-        'wait_for_notification': wait_for_notification
-    }
+    yield {"url": "http://localhost:8888/webhook", "notifications": notifications, "wait_for_notification": wait_for_notification}
 
 
 # Helper function to check push notification support
@@ -451,7 +447,7 @@ def test_send_message_with_push_notification_config(sut_client, agent_card_data,
 
     # Prepare a message with pushNotificationConfig using real webhook server
     message_id = "test-push-config-in-send-" + str(uuid.uuid4())
-    webhook_url = push_notification_webhook['url']
+    webhook_url = push_notification_webhook["url"]
 
     message_params = {
         "message": {
@@ -517,18 +513,18 @@ def test_send_message_with_push_notification_config(sut_client, agent_card_data,
 
         # Also verify that push notification was actually sent to the webhook
         logger.info("Waiting for push notification to be received by webhook...")
-        notification_received = push_notification_webhook['wait_for_notification'](timeout=10.0)
+        notification_received = push_notification_webhook["wait_for_notification"](timeout=10.0)
 
         if notification_received:
             logger.info(f"✓ Webhook received {len(push_notification_webhook['notifications'])} notification(s)")
-            for idx, notification in enumerate(push_notification_webhook['notifications']):
+            for idx, notification in enumerate(push_notification_webhook["notifications"]):
                 logger.info(f"Notification {idx}: {notification}")
 
             # Verify the notification is for our task
             # Notification can be a Task object (with "id") or status update (with "taskId")
             task_found_in_notifications = any(
                 notification.get("taskId") == task_id or notification.get("id") == task_id
-                for notification in push_notification_webhook['notifications']
+                for notification in push_notification_webhook["notifications"]
             )
             assert task_found_in_notifications, (
                 f"Push notification was sent but did not contain our task ID {task_id}. "
@@ -584,7 +580,7 @@ def test_send_streaming_message_with_push_notification_config(sut_client, agent_
 
     # Prepare a streaming message with pushNotificationConfig using real webhook server
     message_id = "test-push-config-stream-" + str(uuid.uuid4())
-    webhook_url = push_notification_webhook['url']
+    webhook_url = push_notification_webhook["url"]
 
     message_params = {
         "message": {
@@ -606,9 +602,7 @@ def test_send_streaming_message_with_push_notification_config(sut_client, agent_
     # Send the streaming message with configuration
     async def run_streaming_test():
         task_id = None
-        stream = transport_helpers.transport_send_streaming_message(
-            sut_client, message_params, configuration=configuration
-        )
+        stream = transport_helpers.transport_send_streaming_message(sut_client, message_params, configuration=configuration)
 
         # Collect streaming updates and extract task_id
         # Different transports return different formats:
@@ -677,18 +671,18 @@ def test_send_streaming_message_with_push_notification_config(sut_client, agent_
 
         # Also verify that push notification was actually sent to the webhook
         logger.info("Waiting for push notification to be received by webhook...")
-        notification_received = push_notification_webhook['wait_for_notification'](timeout=10.0)
+        notification_received = push_notification_webhook["wait_for_notification"](timeout=10.0)
 
         if notification_received:
             logger.info(f"✓ Webhook received {len(push_notification_webhook['notifications'])} notification(s)")
-            for idx, notification in enumerate(push_notification_webhook['notifications']):
+            for idx, notification in enumerate(push_notification_webhook["notifications"]):
                 logger.info(f"Notification {idx}: {notification}")
 
             # Verify the notification is for our task
             # Notification can be a Task object (with "id") or status update (with "taskId")
             task_found_in_notifications = any(
                 notification.get("taskId") == task_id or notification.get("id") == task_id
-                for notification in push_notification_webhook['notifications']
+                for notification in push_notification_webhook["notifications"]
             )
             assert task_found_in_notifications, (
                 f"Push notification was sent but did not contain our task ID {task_id}. "

@@ -588,7 +588,7 @@ def transport_send_streaming_message(
     client: BaseTransportClient,
     message_params: Dict[str, Any],
     configuration: Optional[Dict[str, Any]] = None,
-    extra_headers: Optional[Dict[str, str]] = None
+    extra_headers: Optional[Dict[str, str]] = None,
 ) -> Any:
     """
     Send a message with streaming response using any transport client.
@@ -617,9 +617,7 @@ def transport_send_streaming_message(
         raise ValueError(f"Client {type(client)} does not support streaming message sending")
 
 
-def transport_resubscribe_task(
-    client: BaseTransportClient, task_id: str, extra_headers: Optional[Dict[str, str]] = None
-) -> Any:
+def transport_resubscribe_task(client: BaseTransportClient, task_id: str, extra_headers: Optional[Dict[str, str]] = None) -> Any:
     """
     Resubscribe to task updates using any transport client.
 

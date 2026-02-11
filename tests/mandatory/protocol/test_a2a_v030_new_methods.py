@@ -217,7 +217,6 @@ class TestTasksList:
     JSON-RPC transport does not support this method.
     """
 
-    
     @optional_capability
     @a2a_v030
     def test_tasks_list_with_existing_tasks(self, sut_client: BaseTransportClient):
@@ -509,7 +508,12 @@ class TestTransportSpecificFeatures:
                     {
                         "method": "message/send",
                         "params": {
-                            "message": {"kind": "message", "role": "user", "parts": [{"kind": "text", "text": "test"}], "messageId": "test-batch-1"}
+                            "message": {
+                                "kind": "message",
+                                "role": "user",
+                                "parts": [{"kind": "text", "text": "test"}],
+                                "messageId": "test-batch-1",
+                            }
                         },
                         "id": 2,
                     },

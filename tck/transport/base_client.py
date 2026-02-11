@@ -111,7 +111,7 @@ class BaseTransportClient(ABC):
         self,
         message: Dict[str, Any],
         configuration: Optional[Dict[str, Any]] = None,
-        extra_headers: Optional[Dict[str, str]] = None
+        extra_headers: Optional[Dict[str, str]] = None,
     ) -> Any:
         """
         Send a message with streaming response using message/stream method.

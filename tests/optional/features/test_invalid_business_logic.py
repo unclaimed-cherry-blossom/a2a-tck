@@ -133,7 +133,14 @@ def test_empty_message_parts(sut_client):
         - Implementation correctly validates required message structure
     """
     # Create a message with empty parts array (violates A2A MUST requirement)
-    params = {"message": {"kind": "message", "messageId": "test-empty-parts-message-id-" + str(uuid.uuid4()), "role": "user", "parts": []}}
+    params = {
+        "message": {
+            "kind": "message",
+            "messageId": "test-empty-parts-message-id-" + str(uuid.uuid4()),
+            "role": "user",
+            "parts": [],
+        }
+    }
 
     # Replace with transport helper
     resp = transport_helpers.transport_send_message(sut_client, params)
@@ -142,7 +149,7 @@ def test_empty_message_parts(sut_client):
     assert transport_helpers.is_json_rpc_error_response(resp), (
         f"SUT MUST reject messages with empty parts array per A2A spec, but got: {resp}"
     )
-    
+
     # Accept both -32602 (Invalid params) and -32603 (Internal error) as valid responses
     # Both codes are reasonable for this validation error case
     error_code = resp["error"]["code"]

@@ -18,8 +18,11 @@ from urllib.parse import urljoin
 import httpx
 from httpx import AsyncClient, Client
 
-from tck.message_utils import convert_a2a_message_to_protobuf_json, handle_http_error_response, \
-    convert_protobuf_response_to_a2a_json
+from tck.message_utils import (
+    convert_a2a_message_to_protobuf_json,
+    handle_http_error_response,
+    convert_protobuf_response_to_a2a_json,
+)
 from tck.transport.base_client import BaseTransportClient, TransportType, TransportError
 
 logger = logging.getLogger(__name__)
@@ -76,7 +79,7 @@ class RESTClient(BaseTransportClient):
     def _create_ssl_context(self):
         """Create a robust SSL context that handles various SSL/TLS issues."""
         # Check if user wants to force simple SSL mode
-        if os.getenv('A2A_TCK_SIMPLE_SSL', '').lower() in ('true', '1', 'yes'):
+        if os.getenv("A2A_TCK_SIMPLE_SSL", "").lower() in ("true", "1", "yes"):
             logger.info("Using simple SSL mode (verify=False) due to A2A_TCK_SIMPLE_SSL")
             return False
 
@@ -85,9 +88,9 @@ class RESTClient(BaseTransportClient):
             ssl_context = ssl.create_default_context()
             ssl_context.check_hostname = False
             ssl_context.verify_mode = ssl.CERT_NONE
-            
+
             # Additional SSL options to handle edge cases
-            ssl_context.set_ciphers('DEFAULT:@SECLEVEL=1')
+            ssl_context.set_ciphers("DEFAULT:@SECLEVEL=1")
 
             logger.debug("Created enhanced SSL context with permissive settings")
             return ssl_context
@@ -101,12 +104,9 @@ class RESTClient(BaseTransportClient):
         if self._client is None:
             # Try SSL context first, fall back to verify=False
             verify_setting = self._create_ssl_context()
-            
+
             self._client = Client(
-                timeout=self.timeout, 
-                headers=self.default_headers, 
-                follow_redirects=True, 
-                verify=verify_setting
+                timeout=self.timeout, headers=self.default_headers, follow_redirects=True, verify=verify_setting
             )
             logger.debug(f"Created HTTP client for {self.base_url} with verify={type(verify_setting).__name__}")
         return self._client
@@ -117,12 +117,9 @@ class RESTClient(BaseTransportClient):
         if self._async_client is None:
             # Try SSL context first, fall back to verify=False
             verify_setting = self._create_ssl_context()
-            
+
             self._async_client = AsyncClient(
-                verify=verify_setting, 
-                timeout=self.timeout, 
-                headers=self.default_headers, 
-                follow_redirects=True
+                verify=verify_setting, timeout=self.timeout, headers=self.default_headers, follow_redirects=True
             )
             logger.debug(f"Created async HTTP client for {self.base_url} with verify={type(verify_setting).__name__}")
         return self._async_client
@@ -152,8 +149,6 @@ class RESTClient(BaseTransportClient):
 
     def __exit__(self, exc_type, exc_val, exc_tb):
         self.close()
-
-
 
     def send_message(
         self,
@@ -247,7 +242,7 @@ class RESTClient(BaseTransportClient):
         self,
         message: Dict[str, Any],
         configuration: Optional[Dict[str, Any]] = None,
-        extra_headers: Optional[Dict[str, str]] = None
+        extra_headers: Optional[Dict[str, str]] = None,
     ) -> AsyncIterator[Dict[str, Any]]:
         """
         Send message via HTTP POST and stream responses using Server-Sent Events.
@@ -364,7 +359,7 @@ class RESTClient(BaseTransportClient):
             # Add query parameters
             params = {}
             if "history_length" in kwargs:
-                if kwargs["history_length"] is not None :
+                if kwargs["history_length"] is not None:
                     params["history_length"] = kwargs["history_length"]
 
             # Make real HTTP request to live SUT
@@ -446,7 +441,9 @@ class RESTClient(BaseTransportClient):
             logger.error(error_msg)
             raise TransportError(error_msg, TransportType.REST)
 
-    def resubscribe_task(self, task_id: str, extra_headers: Optional[Dict[str, str]] = None, **kwargs) -> AsyncIterator[Dict[str, Any]]:
+    def resubscribe_task(
+        self, task_id: str, extra_headers: Optional[Dict[str, str]] = None, **kwargs
+    ) -> AsyncIterator[Dict[str, Any]]:
         """
         Resubscribe to task updates via HTTP SSE streaming.
 
@@ -465,7 +462,9 @@ class RESTClient(BaseTransportClient):
         """
         return self.subscribe_to_task(task_id, extra_headers, **kwargs)
 
-    async def subscribe_to_task(self, task_id: str, extra_headers: Optional[Dict[str, str]] = None, **kwargs) -> AsyncIterator[Dict[str, Any]]:
+    async def subscribe_to_task(
+        self, task_id: str, extra_headers: Optional[Dict[str, str]] = None, **kwargs
+    ) -> AsyncIterator[Dict[str, Any]]:
         """
         Subscribe to task updates via HTTP SSE streaming.
 
@@ -673,7 +672,7 @@ class RESTClient(BaseTransportClient):
             # Format request according to protobuf CreateTaskPushNotificationConfigRequest structure
             # Generate config_id if not provided
             config_id = config.get("id", "default")
-            
+
             # Build protobuf-compatible request structure
             protobuf_request = {
                 "parent": f"tasks/{task_id}",
@@ -684,9 +683,9 @@ class RESTClient(BaseTransportClient):
                         "id": config_id,
                         "url": config.get("url", ""),
                         "token": config.get("token", ""),
-                        "authentication": config.get("authentication", {})
-                    }
-                }
+                        "authentication": config.get("authentication", {}),
+                    },
+                },
             }
 
             # Make real HTTP request to live SUT
@@ -803,7 +802,7 @@ class RESTClient(BaseTransportClient):
 
             # Parse JSON response
             configs_response = response.json()
-            
+
             # Extract configs array from protobuf ListTaskPushNotificationConfigResponse structure
             # The protobuf response has format: {"configs": [...]}
             # But A2A tests expect just the array directly, with taskId added to each config
@@ -873,7 +872,7 @@ class RESTClient(BaseTransportClient):
                 deletion_response = response.json() if response.content else {}
             except Exception:
                 deletion_response = {}  # Empty response is acceptable for DELETE
-            
+
             # Return None for successful deletion (Empty protobuf response)
             logger.debug(f"Deleted push notification config via REST: {task_id}/{config_id}")
             return None

@@ -62,7 +62,9 @@ def transport_capabilities():
     return capabilities
 
 
-def execute_equivalent_operation(sut_client: BaseTransportClient, operation: str, params: Dict[str, Any], transport: str = "http_jsonrpc") -> Dict[str, Any]:
+def execute_equivalent_operation(
+    sut_client: BaseTransportClient, operation: str, params: Dict[str, Any], transport: str = "http_jsonrpc"
+) -> Dict[str, Any]:
     """
     Execute the same logical operation across different transports.
 
@@ -569,7 +571,10 @@ def test_performance_equivalence(sut_client: BaseTransportClient, transport_capa
 
                 try:
                     result = execute_equivalent_operation(
-                        sut_client, operation["operation"], operation["params"], transport.lower().replace("/", "_").replace("-", "_")
+                        sut_client,
+                        operation["operation"],
+                        operation["params"],
+                        transport.lower().replace("/", "_").replace("-", "_"),
                     )
 
                     end_time = time.time()

@@ -345,7 +345,7 @@ def run_all_categories(
                     tr,
                 )
                 results[f"{category}:{tr}"] = exit_code
-                
+
                 # Collect detailed statistics from JSON report
                 json_path = REPORTS_DIR / json_report_file
                 stats = collect_test_results_from_json(json_path, category)
@@ -378,17 +378,17 @@ def run_all_categories(
             ",".join(multi_transports),
         )
         results["transport-equivalence"] = te_exit
-        
+
         # Collect transport-equivalence statistics
         json_path = REPORTS_DIR / "transport-equivalence_results.json"
         stats = collect_test_results_from_json(json_path, "transport-equivalence")
         category_statistics["transport-equivalence"] = {
             "total": stats.get("total", 0),
-            "passed": stats.get("passed", 0), 
+            "passed": stats.get("passed", 0),
             "failed": stats.get("failed", 0),
             "skipped": stats.get("skipped", 0),
             "xfailed": stats.get("xfailed", 0),
-            "error": stats.get("error", 0)  # Actual errors from JSON report
+            "error": stats.get("error", 0),  # Actual errors from JSON report
         }
 
         return results
@@ -416,7 +416,7 @@ def run_all_categories(
             transports,
         )
         results[category] = exit_code
-        
+
         # Collect detailed statistics from JSON report
         json_path = REPORTS_DIR / json_report_file
         stats = collect_test_results_from_json(json_path, category)
@@ -426,7 +426,7 @@ def run_all_categories(
             "failed": stats.get("failed", 0),
             "skipped": stats.get("skipped", 0),
             "xfailed": stats.get("xfailed", 0),
-            "error": stats.get("error", 0)  # Actual errors from JSON report
+            "error": stats.get("error", 0),  # Actual errors from JSON report
         }
 
         print()
@@ -503,7 +503,9 @@ def run_all_categories(
 
     print(f"🔴 Mandatory Tests:           {'✅ PASSED' if mandatory_passed else '❌ FAILED'} ({mandatory_stats})")
     print(f"🔄 Capability Tests:          {'✅ PASSED' if capabilities_passed else '❌ FAILED'} ({capabilities_stats})")
-    print(f"🚀 Transport Equivalence:     {'✅ PASSED' if transport_equivalence_passed else '❌ FAILED'} ({transport_equivalence_stats})")
+    print(
+        f"🚀 Transport Equivalence:     {'✅ PASSED' if transport_equivalence_passed else '❌ FAILED'} ({transport_equivalence_stats})"
+    )
     print(f"🛡️  Quality Tests:             {'✅ PASSED' if quality_passed else '⚠️  ISSUES'} ({quality_stats})")
     print(f"🎨 Feature Tests:             {'✅ PASSED' if features_passed else 'ℹ️  INCOMPLETE'} ({features_stats})")
     print()
@@ -577,15 +579,15 @@ def collect_test_results_from_json(json_file: Path, category: str) -> Dict:
         total = summary.get("total", 0)
         passed = summary.get("passed", 0)
         failed = summary.get("failed", 0)  # Regular test failures
-        error = summary.get("error", 0)    # Setup/teardown errors
+        error = summary.get("error", 0)  # Setup/teardown errors
         skipped = summary.get("skipped", 0)
-        
+
         # Count xfailed from individual test results since it's not in summary
         xfailed = 0
         for test in tests:
             if test.get("outcome") == "xfailed":
                 xfailed += 1
-        
+
         # Combine failed and error into one "failed" category for our purposes
         total_failed = failed + error
 
@@ -602,7 +604,15 @@ def collect_test_results_from_json(json_file: Path, category: str) -> Dict:
                 "markers": [marker.get("name", "") for marker in test.get("markers", [])],
             }
 
-        return {"total": total, "passed": passed, "failed": total_failed, "skipped": skipped, "xfailed": xfailed, "error": error, "tests": test_details}
+        return {
+            "total": total,
+            "passed": passed,
+            "failed": total_failed,
+            "skipped": skipped,
+            "xfailed": xfailed,
+            "error": error,
+            "tests": test_details,
+        }
 
     except Exception as e:
         print(f"Warning: Could not parse JSON report {json_file}: {e}")
@@ -634,13 +644,13 @@ def format_test_statistics(stats: Dict) -> str:
     """Format test statistics in compact format: p:#/f:#/x:#/e:#/s:#"""
     if not stats:
         return "p:0/f:0/x:0/e:0/s:0"
-    
+
     passed = stats.get("passed", 0)
     failed = stats.get("failed", 0)
     xfailed = stats.get("xfailed", 0)
     error = stats.get("error", 0)
     skipped = stats.get("skipped", 0)
-    
+
     return f"p:{passed}/f:{failed}/x:{xfailed}/e:{error}/s:{skipped}"
 
 
@@ -833,9 +843,7 @@ Categories:
         # Calculate critical failures using set for efficient lookup
         critical_categories_set = set(critical_categories)
         critical_failures = sum(
-            exit_code
-            for key, exit_code in results.items()
-            if key.split(":", 1)[0] in critical_categories_set
+            exit_code for key, exit_code in results.items() if key.split(":", 1)[0] in critical_categories_set
         )
 
         if critical_failures != 0:
