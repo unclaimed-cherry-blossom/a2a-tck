@@ -9,6 +9,7 @@ Specification Reference: A2A Protocol v0.3.0 §3.4 - Transport Compliance and In
 """
 
 import logging
+import os
 from typing import Any, Dict, List, Optional, Set, Union
 
 import requests
@@ -78,6 +79,13 @@ class TransportManager:
         self.sut_base_url = sut_base_url
         self.session = session or requests.Session()
         self.selection_strategy = selection_strategy
+
+        # Apply auth headers from environment if not already in session
+        if "Authorization" not in self.session.headers:
+            auth_header = os.getenv("A2A_JSONRPC_AUTHORIZATION")
+            if auth_header:
+                self.session.headers.update({"Authorization": auth_header})
+                logger.info("Applied auth header to TransportManager session from environment")
 
         # Initialize internal state
         self._agent_card: Optional[Dict[str, Any]] = None

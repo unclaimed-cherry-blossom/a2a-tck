@@ -2,9 +2,14 @@ import logging
 import os
 
 import pytest
+from dotenv import load_dotenv
 
 from tck import agent_card_utils, config, logging_config
 from tck.sut_client import SUTClient
+
+# Load environment variables from .env file if it exists
+# This needs to happen before any fixtures that might use env vars
+load_dotenv(override=False)
 
 logger = logging.getLogger(__name__)
 

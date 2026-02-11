@@ -36,9 +36,18 @@ def fetch_agent_card(sut_base_url: str, session: requests.Session) -> Optional[D
 
     Specification Reference: A2A Protocol v0.3.0 §5.3 - Recommended Location
     """
-    # Parse the base URL to determine the host
+    # Parse the base URL to get the base path
     parsed_url = urllib.parse.urlparse(sut_base_url)
-    base_domain = f"{parsed_url.scheme}://{parsed_url.netloc}"
+
+    # Construct base domain preserving the path up to (but not including) the API endpoint
+    # For example: https://example.com/dev/a2a/ -> https://example.com/dev
+    path_parts = parsed_url.path.rstrip("/").split("/")
+    # Remove the last part if it looks like an API endpoint (e.g., 'a2a', 'jsonrpc', 'api')
+    if path_parts and path_parts[-1] in ["a2a", "jsonrpc", "api", "rpc"]:
+        path_parts = path_parts[:-1]
+
+    base_path = "/".join(path_parts) if path_parts else ""
+    base_domain = f"{parsed_url.scheme}://{parsed_url.netloc}{base_path}"
 
     # Try v0.3.0 location first
     agent_card_urls = [
@@ -46,12 +55,34 @@ def fetch_agent_card(sut_base_url: str, session: requests.Session) -> Optional[D
         ("/.well-known/agent.json", "v0.2.5"),  # Backward compatibility
     ]
 
+    # Debug: Log session headers
+    logger.info(f"Session headers for Agent Card fetch: {dict(session.headers)}")
+    logger.info(f"Base domain for Agent Card: {base_domain}")
+
     for url_path, version in agent_card_urls:
         try:
-            agent_card_url = urllib.parse.urljoin(base_domain, url_path)
+            # Properly join base_domain with the agent card path
+            # Don't use urljoin with absolute paths as it replaces the entire path
+            if base_domain.endswith("/"):
+                agent_card_url = base_domain.rstrip("/") + url_path
+            else:
+                agent_card_url = base_domain + url_path
+
             logger.info(f"Fetching Agent Card from {agent_card_url} ({version} location)")
 
             response = session.get(agent_card_url, timeout=10)
+            logger.info(f"Agent Card fetch response status: {response.status_code}")
+
+            if response.status_code == 401:
+                logger.error(f"Authentication failed (401) when fetching Agent Card from {agent_card_url}")
+                logger.error(f"Response: {response.text[:500]}")
+                continue
+
+            if response.status_code == 403:
+                logger.error(f"Access forbidden (403) when fetching Agent Card from {agent_card_url}")
+                logger.error(f"Response: {response.text[:500]}")
+                continue
+
             response.raise_for_status()
 
             try:
@@ -63,10 +94,13 @@ def fetch_agent_card(sut_base_url: str, session: requests.Session) -> Optional[D
                 continue  # Try next location
 
         except requests.RequestException as e:
-            logger.info(f"Agent Card not found at {version} location ({url_path}): {e}")
+            logger.warning(f"Agent Card not found at {version} location ({url_path}): {e}")
+            if hasattr(e, "response") and e.response is not None:
+                logger.warning(f"Response status: {e.response.status_code}, Body: {e.response.text[:200]}")
             continue  # Try next location
 
     logger.error("Failed to fetch Agent Card from any known location")
+    logger.error(f"Tried URLs: {[urllib.parse.urljoin(base_domain, path) for path, _ in agent_card_urls]}")
     return None
 
 

@@ -1,4 +1,5 @@
 import logging
+import os
 from typing import Any, Dict, Optional, Tuple, Union, cast
 
 import requests
@@ -12,6 +13,24 @@ class SUTClient:
     def __init__(self, base_url: Optional[str] = None):
         self.base_url = base_url or config.get_sut_url()
         self.session = requests.Session()
+
+        # Apply auth headers from environment variables if available
+        self._apply_auth_headers()
+
+    def _apply_auth_headers(self):
+        """
+        Apply authentication headers from environment variables to the session.
+
+        Checks for A2A_JSONRPC_AUTHORIZATION environment variable and applies it
+        to the session headers for all requests.
+        """
+        # Check for JSON-RPC auth header (default transport)
+        auth_header = os.getenv("A2A_JSONRPC_AUTHORIZATION")
+        if auth_header:
+            self.session.headers.update({"Authorization": auth_header})
+            logger.info(f"Applied authentication header from A2A_JSONRPC_AUTHORIZATION: {auth_header[:30]}...")
+        else:
+            logger.warning("No A2A_JSONRPC_AUTHORIZATION environment variable found")
 
     # Legacy send_json_rpc method removed - use transport-agnostic clients instead
     # See transport_helpers.py for modern alternatives
